@@ -8,85 +8,76 @@ library(readr)
 data <- read_csv("~/cybersecurity/train.txt", 
                  col_types = cols(Date = col_date(format = "%d/%m/%Y"), 
                                   Time = col_time(format = "%H:%M:%S")))
-View(data)
 
-data$Date <- as.POSIXct(paste(data$Date, data$Time), format="%Y-%m-%d %H:%M:%S")
+# remove NA rows
 data <- na.omit(data)
-data$Time <- NULL
 
-reduced_data <- data[1:100000,]
+# Leave columns of interest and reduce size of dataset
+reduced_data <- data[1:100000,3:6]
+plot.ts(reduced_data)
 
-plot.ts(reduced_data[2:8])
+# scale the values
+scaled_data <- data.frame(scale(reduced_data))
+
+correlation <- cor(scaled_data)
+
+# Defining MHMM parameters
+
 
 # Number of states
-J <- 5
+J <- 3
 
-train_data <- formatMhsmm(reduced_data[,2:8])
-test_data <- formatMhsmm(reduced_data[1:20000,2:8])
 
 # Calculating the means by KNN
-m <- kmeans(reduced_data[,2:8], J)
+m <- kmeans(scaled_data, J)
 
-reduced_data$cluster <- m$cluster
+scaled_data$cluster <- m$cluster
 
-k1 <- subset(reduced_data, reduced_data$cluster == 1)
-k2 <- subset(reduced_data, reduced_data$cluster == 2)
-k3 <- subset(reduced_data, reduced_data$cluster == 3)
-k4 <- subset(reduced_data, reduced_data$cluster == 4)
-k5 <- subset(reduced_data, reduced_data$cluster == 5)
+k1 <- subset(scaled_data, scaled_data$cluster == 1)
+k2 <- subset(scaled_data, scaled_data$cluster == 2)
+k3 <- subset(scaled_data, scaled_data$cluster == 3)
+
+scaled_data$cluster <- NULL
 
 # Calculating the std
+
 k11_std <- sd(k1$Global_active_power)
 k21_std <- sd(k2$Global_active_power)
 k31_std <- sd(k3$Global_active_power)
-k41_std <- sd(k4$Global_active_power)
-k51_std <- sd(k5$Global_active_power)
 
 k12_std <- sd(k1$Global_reactive_power)
 k22_std <- sd(k2$Global_reactive_power)
 k32_std <- sd(k3$Global_reactive_power)
-k42_std <- sd(k4$Global_reactive_power)
-k52_std <- sd(k5$Global_reactive_power)
 
 k13_std <- sd(k1$Voltage)
 k23_std <- sd(k2$Voltage)
 k33_std <- sd(k3$Voltage)
-k43_std <- sd(k4$Voltage)
-k53_std <- sd(k5$Voltage)
 
 k14_std <- sd(k1$Global_intensity)
 k24_std <- sd(k2$Global_intensity)
 k34_std <- sd(k3$Global_intensity)
-k44_std <- sd(k4$Global_intensity)
-k54_std <- sd(k5$Global_intensity)
 
-k15_std <- sd(k1$Sub_metering_1)
-k25_std <- sd(k2$Sub_metering_1)
-k35_std <- sd(k3$Sub_metering_1)
-k45_std <- sd(k4$Sub_metering_1)
-k55_std <- sd(k5$Sub_metering_1)
+# Diagonal for the std matrix of each state
 
-k16_std <- sd(k1$Sub_metering_2)
-k26_std <- sd(k2$Sub_metering_2)
-k36_std <- sd(k3$Sub_metering_2)
-k46_std <- sd(k4$Sub_metering_2)
-k56_std <- sd(k5$Sub_metering_2)
+k1_diag = c(k11_std,k12_std,k13_std, k14_std)
+k2_diag = c(k21_std,k22_std,k23_std, k24_std)
+k3_diag = c(k31_std,k32_std,k33_std, k34_std)
 
-k17_std <- sd(k1$Sub_metering_3)
-k27_std <- sd(k2$Sub_metering_3)
-k37_std <- sd(k3$Sub_metering_3)
-k47_std <- sd(k4$Sub_metering_3)
-k57_std <- sd(k5$Sub_metering_3)
 
-k1_std = c(k11_std,k21_std,k31_std, k41_std, k51_std)
-k2_std = c(k12_std,k22_std,k32_std, k42_std, k52_std)
-k3_std = c(k13_std,k23_std,k33_std, k43_std, k53_std)
-k4_std = c(k14_std,k24_std,k34_std, k44_std, k54_std)
-k5_std = c(k15_std,k25_std,k35_std, k45_std, k55_std)
-k6_std = c(k16_std,k26_std,k36_std, k46_std, k56_std)
-k7_std = c(k17_std,k27_std,k37_std, k47_std, k57_std)
+# Standard deviation matrix, first get the covariance for each state
 
-std_matrix = matrix(c(k1_std, k2_std, k3_std, k4_std, k5_std, k6_std, k7_std), nrow = J, ncol = 7)
+k1_std <- cov(k1[,1:4])
+k2_std <- cov(k2[,1:4])
+k3_std <- cov(k3[,1:4])
+
+# fill in the diagonal
+
+diag(k1_std) <- k1_diag
+diag(k2_std) <- k2_diag
+diag(k3_std) <- k3_diag
+
+
+std_matrix <- list(k1_std, k2_std, k3_std)
 
 # init probabilities
 init <- rep(1/J, J)
@@ -95,14 +86,42 @@ init <- rep(1/J, J)
 P <- matrix(rep(1/J, J), nrow = J, ncol = J)
 
 # emission matrix
-b <- list(mu = m$centers, sigma = std_matrix)
+means <- t(m$centers)
+means <- list(c(means[,1]), c(means[,2]), c(means[,3]))
+
+b <- list(mu = means, sigma = std_matrix)
 
 # fitting the model
-model <- hmmspec(init = init, trans = P, parms.emission = b, dens.emission = dnorm.hsmm)
+model <- hmmspec(init = init, trans = P, parms.emission = b, dens.emission = dmvnorm.hsmm)
 model
 
+# train model
 
-h1 = hmmfit(train_data$x, model, mstep = mstep.norm)
+train_data <- list(x = data.frame(scaled_data), N = nrow(scaled_data))
+train_data$x <- data.matrix(train_data$x, rownames.force = NA)
+class(train_data) <- "hsmm.data"
+
+h1 = hmmfit(train_data$x, model, mstep = mstep.mvnorm, maxit= 300)
 h1$loglik
 
 summary(h1)
+
+# test model
+
+test <- read_csv("~/cybersecurity/test1.txt", 
+                 col_types = cols(Date = col_date(format = "%d/%m/%Y"), 
+                                  Time = col_time(format = "%H:%M:%S")))
+
+# remove NA rows
+test <- na.omit(test)
+
+test <- test[,3:6]
+scaled_test <- data.frame(scale(test))
+
+test_data <- list(x = data.frame(scaled_test), N = nrow(scaled_test))
+test_data$x <- data.matrix(test_data$x, rownames.force = NA)
+class(test_data) <- "hsmm.data"
+
+
+mvhmm_test <- predict.hmm(h1, test_data$x)
+mvhmm_test$loglik
