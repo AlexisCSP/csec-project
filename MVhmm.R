@@ -1,11 +1,10 @@
-library(HMM)
 library(mhsmm)
 
 if(!exists("foo", mode="function")) source("formatMhsmm.R")
 
 # load data
 library(readr)
-data <- read_csv("~/cybersecurity/train.txt", 
+data <- read_csv("train.txt", 
                  col_types = cols(Date = col_date(format = "%d/%m/%Y"), 
                                   Time = col_time(format = "%H:%M:%S")))
 
@@ -102,20 +101,18 @@ train_data$x <- data.matrix(train_data$x, rownames.force = NA)
 class(train_data) <- "hsmm.data"
 
 h1 = hmmfit(train_data$x, model, mstep = mstep.mvnorm, maxit= 300)
-h1$loglik
-
 summary(h1)
 
-# test model
+# test data
 
-test <- read_csv("~/cybersecurity/test1.txt", 
+test <- read_csv("test2.txt", 
                  col_types = cols(Date = col_date(format = "%d/%m/%Y"), 
                                   Time = col_time(format = "%H:%M:%S")))
 
 # remove NA rows
 test <- na.omit(test)
 
-test <- test[,3:6]
+test <- test[1:100000,3:6]
 scaled_test <- data.frame(scale(test))
 
 test_data <- list(x = data.frame(scaled_test), N = nrow(scaled_test))
@@ -123,5 +120,7 @@ test_data$x <- data.matrix(test_data$x, rownames.force = NA)
 class(test_data) <- "hsmm.data"
 
 
-mvhmm_test <- predict.hmm(h1, test_data$x)
-mvhmm_test$loglik
+yhat1 <- predict.hmm(h1, train_data$x)
+yhat2 <- predict.hmm(h1, test_data$x)
+
+mean(yhat1$s != yhat2$s)
