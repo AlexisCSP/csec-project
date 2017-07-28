@@ -130,6 +130,7 @@ validation_pred <- predict.hmm(hmm, validation_data)
 # detect anomalies
 threshold <- 1
 validation_results <- detectAnomaliesMVHMM(validation_pred, hmm$model$parms.emission, threshold)
+View(validation_results$data)
 
 #--------------------------------------------- Test MVHMM ---------------------------------------------#
 
@@ -139,6 +140,5 @@ test_data <- formatMVhmm(data.frame(test_data))
 # predict with test data
 test_pred <- predict.hmm(hmm, test_data$x)
 
-# detect anomalies
-threshold <- 1
-test_results <- detectAnomaliesMVHMM(test_pred, hmm$model$parms.emission, threshold)
+
+test_pred <- predict.hmm(hmm, test_data$x)

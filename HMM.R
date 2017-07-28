@@ -64,7 +64,8 @@ for(i in 1:J) {
   clusters_std[i] = sd(clusters[[i]][[1]])
 }
 
-std_matrix <- clusters_std
+#std_matrix <- clusters_std
+std_matrix <- sqrt(gm_clusters$parameters$variance$sigmasq)
 
 # init probabilities
 init <- rep(1/J, J)
@@ -73,7 +74,7 @@ init <- rep(1/J, J)
 P <- matrix(rep(1/J, J), nrow = J, ncol = J)
 
 # emission matrix
-means <- c(kclust$centers)
+means <- c(gm_clusters$parameters$mean)
 
 b <- list(mu = means, sigma = std_matrix)
 
@@ -106,13 +107,12 @@ for(i in 1:validation_pred$N) {
   #test_obs_prob = pnorm(test_obs, mean=state_mean, sd=state_std)
   anomaly_results[i,1] <- 0
   anomaly_results[i,2] <- 0.05
-  if(abs(test_obs - state_mean) > 2*state_std) {
+  if(abs(test_obs - state_mean) > 1) {
     anomaly_results[i,1] <- 1
     anomaly_results[i,2] <- 0.95
     anomalies <- anomalies + 1
   }
 }
 
-pnorm(1.65, mean=0.44, sd=0.0335)
 
 test_pred <- predict.hmm(hmm, test_data$x)
