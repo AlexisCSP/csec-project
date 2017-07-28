@@ -1,4 +1,5 @@
 library(mhsmm)
+if(!exists("foo", mode="function")) source("formatMVhmm.R")
 if(!exists("foo", mode="function")) source("detectAnomaliesMVHMM.R")
 
 #--------------------------------------------- Load dataset ---------------------------------------------#
@@ -45,7 +46,10 @@ test_data <- data.frame(scale(test[,3:6])) # Leave columns of interest in test
 #--------------------------------------------- Define MVHMM parameters  ---------------------------------------------#
 
 # Number of states
-J <- 4
+J <- 3
+
+# Number of variables
+v <- 4
 
 # Calculating the clusters and the means of the states by KNN
 kclust <- kmeans(train_data, J)
@@ -69,10 +73,10 @@ for(i in 1:J) {
 train_data$cluster <- NULL
 
 # Calculating the std for each cluster/state (column of the matrix)
-clusters_std <- matrix(nrow = J, ncol = J)
+clusters_std <- matrix(nrow = v, ncol = J)
 
 for(i in 1:J) {
-  for(k in 1:J) {
+  for(k in 1:v) {
     clusters_std[k,i] = sd(clusters[[i]][[k]])
   }
 }
@@ -82,7 +86,7 @@ clusters_cov <- vector("list", J)
 
 i <- 1
 for(c in clusters) {
-  clusters_cov[[i]] = matrix(nrow = 4, ncol = 4)
+  clusters_cov[[i]] = matrix(nrow = v, ncol = v)
   clusters_cov[[i]] = cov(c[1:4])
   i <- i + 1
 }
@@ -137,7 +141,7 @@ validation_results <- detectAnomaliesMVHMM(validation_pred, hmm$model$parms.emis
 test_data <- formatMVhmm(data.frame(test_data))
 
 # predict with test data
-test_pred <- predict.hmm(hmm, test_data$x)
+test_pred <- predict.hmm(hmm, test_data)
 
 # detect anomalies
 threshold <- 1
