@@ -149,7 +149,7 @@ test_data <- formatMVhmm(data.frame(test_data))
 # predict with test data
 test_pred <- predict.hmm(hmm, test_data)
 
-# detect anomalies
+# detect point anomalies
 threshold <- 2
 test_point_anomalies <- detectPointAnomalies(test_pred, hmm$model$parms.emission, threshold)
 
