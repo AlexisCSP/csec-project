@@ -1,8 +1,8 @@
-detectAnomaliesMVHMM <- function(prediction, params, threshold) {
+detectPointAnomalies <- function(prediction, params, threshold) {
   min <- min(prediction$x[,1])
   max <- max(prediction$x[,1])
   N <- prediction$N
-  anomaly_results <- matrix(ncol = 3, nrow = N)
+  anomaly_results <- matrix(ncol = 2, nrow = N)
   anomalies <- 0
   for(i in 1:N) {
     obs_state <- prediction$s[i]
@@ -15,7 +15,7 @@ detectAnomaliesMVHMM <- function(prediction, params, threshold) {
       anomaly <- 1
       anomalies <- anomalies + 1
     }
-    anomaly_results[i,] <- c(obs_value, anomaly, probability)
+    anomaly_results[i,] <- c(anomaly, probability)
   }
   return(list(data = anomaly_results, anomalies = anomalies))
 }

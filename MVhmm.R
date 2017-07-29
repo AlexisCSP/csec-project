@@ -1,6 +1,7 @@
 library(mhsmm)
 if(!exists("foo", mode="function")) source("formatMVhmm.R")
-if(!exists("foo", mode="function")) source("detectAnomaliesMVHMM.R")
+if(!exists("foo", mode="function")) source("detectPointAnomalies.R")
+if(!exists("foo", mode="function")) source("detectCollectiveAnomalies.R")
 
 #--------------------------------------------- Load dataset ---------------------------------------------#
 
@@ -46,7 +47,7 @@ test_data <- data.frame(scale(test[,3:6])) # Leave columns of interest in test
 #--------------------------------------------- Define MVHMM parameters  ---------------------------------------------#
 
 # Number of states
-J <- 3
+J <- 4
 
 # Number of variables
 v <- 4
@@ -131,9 +132,14 @@ validation_data <- formatMVhmm(data.frame(validation_data))
 # predict with validation data
 validation_pred <- predict.hmm(hmm, validation_data)
 
-# detect anomalies
+# detect point anomalies
 threshold <- 1
-validation_results <- detectAnomaliesMVHMM(validation_pred, hmm$model$parms.emission, threshold)
+validation_point_anomalies <- detectPointAnomalies(validation_pred, hmm$model$parms.emission, threshold)
+
+# detect collective anomalies
+window_size <- 5
+validation_collective_anomalies <- detectCollectiveAnomalies(validation_pred, hmm$model$parms.emission, window_size, threshold)
+
 
 #--------------------------------------------- Test MVHMM ---------------------------------------------#
 
@@ -144,5 +150,10 @@ test_data <- formatMVhmm(data.frame(test_data))
 test_pred <- predict.hmm(hmm, test_data)
 
 # detect anomalies
-threshold <- 1
-test_results <- detectAnomaliesMVHMM(test_pred, hmm$model$parms.emission, threshold)
+threshold <- 2
+test_point_anomalies <- detectPointAnomalies(test_pred, hmm$model$parms.emission, threshold)
+
+# detect collective anomalies
+window_size <- 5
+test_collective_anomalies <- detectCollectiveAnomalies(test_pred, hmm$model$parms.emission, window_size, threshold)
+
