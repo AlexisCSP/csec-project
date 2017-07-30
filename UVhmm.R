@@ -108,27 +108,28 @@ summary(hmm)
 # format the validation data
 validation_data <- formatHMM(data.frame(validation_data))
 
-corrupt <- rbinom(length(validation_data$x), 1, 0.1)
+# add point anomalies to validation data
+noisyP_validation_data <- validation_data
+
+corrupt <- rbinom(length(noisyP_validation_data$x), 1, 0.1)
 corrupt <- as.logical(corrupt)
 noise <- runif(sum(corrupt), 0.0, 7.0)
-
-validation_data$x[corrupt] <- noise
+noisyP_validation_data$x[corrupt] <- noise
 
 # predict with validation data
-
+validation_pred <- predict.hmm(hmm, noisyP_validation_data)
 
 # detect point anomalies
 threshold <- 1
 validation_point_anomalies <- detectPointAnomaliesUVhmm(validation_pred, hmm$model$parms.emission, threshold)
 
-# detect collective anomalies
-
+# add collective anomalies to validation data
 window_size <- 20
+noisyC_validation_data <- validation_data
+noisyC_validation_data <- AddCollectiveNoise(noisyC_validation_data, window_size)
+validation_pred <- predict.hmm(hmm, noisyC_validation_data)
 
-noisy_validation_data <- validation_data
-noisy_validation_data <- AddCollectiveNoise(noisy_validation_data, window_size)
-validation_pred <- predict.hmm(hmm, noisy_validation_data)
-
+# detect collective anomalies
 threshold <- 1
 validation_collective_anomalies <- detectCollectiveAnomaliesUVhmm(validation_pred, hmm$model$parms.emission, window_size, threshold)
 
