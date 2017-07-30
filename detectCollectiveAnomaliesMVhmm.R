@@ -1,4 +1,4 @@
-detectCollectiveAnomalies <- function(prediction, params, window_size, threshold) {
+detectCollectiveAnomaliesMVhmm <- function(prediction, params, window_size, threshold) {
   N <- prediction$N
   size <- ceiling(N/window_size)
   window_threshold <- floor(window_size/2)

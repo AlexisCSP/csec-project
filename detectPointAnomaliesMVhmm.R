@@ -1,4 +1,4 @@
-detectPointAnomalies <- function(prediction, params, threshold) {
+detectPointAnomaliesMVhmm <- function(prediction, params, threshold) {
   min <- min(prediction$x[,1])
   max <- max(prediction$x[,1])
   N <- prediction$N

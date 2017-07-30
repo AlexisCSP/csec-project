@@ -1,7 +1,7 @@
 library(mhsmm)
 if(!exists("foo", mode="function")) source("formatHMM.R")
-if(!exists("foo", mode="function")) source("detectPointAnomaliesMVhmm.R")
-if(!exists("foo", mode="function")) source("detectCollectiveAnomaliesMVhmm.R")
+if(!exists("foo", mode="function")) source("detectPointAnomaliesUVhmm.R")
+if(!exists("foo", mode="function")) source("detectCollectiveAnomaliesUVhmm.R")
 
 #--------------------------------------------- Load dataset ---------------------------------------------#
 
@@ -23,41 +23,35 @@ test <- read_csv("test2.txt",
 train <- na.omit(train)
 test <- na.omit(test)
 
-# scale observations
-correlation <- cor(train[,3:6])
-scaled_train <- data.frame(scale(train[,3:6]))
-
 #--------------------------------------------- Split dataset  ---------------------------------------------#
 
 # Split into train and validation data
 
-rows <- nrow(scaled_train)
+rows <- nrow(train)
 split1 <- floor(.90*rows)
 split2 <- split1 + 1
 
-train_split <- scaled_train[1:split1,]
-validation_split  <- scaled_train[split2:rows,]
+train_split <- train[1:split1,]
+validation_split  <- train[split2:rows,]
 
-train_data <- train_split
-validation_data <- validation_split
-test_data <- data.frame(scale(test[,3:6])) # Leave columns of interest in test
+# Leave column of interest (Global reactive power)
 
-#--------------------------------------------- Define MVHMM parameters  ---------------------------------------------#
+train_data <- train_split[,3]
+validation_data <- validation_split[,3]
+test_data <- test[,3]
+
+#--------------------------------------------- Define HMM parameters  ---------------------------------------------#
 
 # Number of states
-J <- 3
+J <- 4
 
 # Number of variables
-v <- 4
+v <- 1
 
 # Calculating the clusters and the means of the states by KNN
 kclust <- kmeans(train_data, J)
 
-means <- vector("list", J)
-
-for(i in 1:J) {
-  means[[i]] <- kclust$centers[i,]
-}
+means <- c(kclust$centers)
 
 train_data$cluster <- kclust$cluster
 
@@ -80,24 +74,9 @@ for(i in 1:J) {
   }
 }
 
-# Calculate covariance between variables within a cluster
-clusters_cov <- vector("list", J)
+std_matrix <- c(clusters_std)
 
-i <- 1
-for(c in clusters) {
-  clusters_cov[[i]] = matrix(nrow = v, ncol = v)
-  clusters_cov[[i]] = cov(c[1:4])
-  i <- i + 1
-}
-
-# Define the diagonal of the covariance matrices for each state as the standard deviation of corresponding variable
-for(i in 1:J) {
-    diag(clusters_cov[[i]]) = clusters_std[,i]
-}
-
-std_matrix <- clusters_cov
-
-#--------------------------------------------- Create MVHMM Specification ---------------------------------------------#
+#--------------------------------------------- Create Univariate HMM Specification ---------------------------------------------#
 
 # initial state probabilities
 init <- rep(1/J, J)
@@ -106,24 +85,25 @@ init <- rep(1/J, J)
 P <- matrix(rep(1/J, J), nrow = J, ncol = J)
 
 # emission matrix
-b <- list(mu = means, sigma = std_matrix)
+b <- list(mu = unlist(means), sigma = std_matrix)
 
 # fitting the model
 
-model <- hmmspec(init = init, trans = P, parms.emission = b, dens.emission = dmvnorm.hsmm)
+model <- hmmspec(init = init, trans = P, parms.emission = b, dens.emission = dnorm.hsmm)
 model
 
-#--------------------------------------------- Fit MVHMM ---------------------------------------------#
+#--------------------------------------------- Fit Univariate HMM ---------------------------------------------#
 
 # format the training data
 train_data <- formatHMM(train_data)
 
 # train model
-hmm = hmmfit(train_data, model, mstep = mstep.mvnorm, maxit= 300)
+hmm = hmmfit(train_data, model, mstep = mstep.norm, maxit= 300)
 summary(hmm)
+
 hmm$loglik
 
-#--------------------------------------------- Validate MVHMM ---------------------------------------------#
+#--------------------------------------------- Validate Univariate HMM ---------------------------------------------#
 
 # format the validation data
 validation_data <- formatHMM(data.frame(validation_data))
@@ -132,16 +112,16 @@ validation_data <- formatHMM(data.frame(validation_data))
 validation_pred <- predict.hmm(hmm, validation_data)
 
 # detect point anomalies
-threshold <- 2
-validation_point_anomalies <- detectPointAnomaliesMVhmm(validation_pred, hmm$model$parms.emission, threshold)
+threshold <- 0.5
+validation_point_anomalies <- detectPointAnomaliesUVhmm(validation_pred, hmm$model$parms.emission, threshold)
 
 # detect collective anomalies
 threshold <- 1
 window_size <- 20
-validation_collective_anomalies <- detectCollectiveAnomaliesMVhmm(validation_pred, hmm$model$parms.emission, window_size, threshold)
+validation_collective_anomalies <- detectCollectiveAnomaliesUVhmm(validation_pred, hmm$model$parms.emission, window_size, threshold)
 
 
-#--------------------------------------------- Test MVHMM ---------------------------------------------#
+#--------------------------------------------- Test Univariate HMM ---------------------------------------------#
 
 # format the test data
 test_data <- formatHMM(data.frame(test_data))
@@ -151,10 +131,10 @@ test_pred <- predict.hmm(hmm, test_data)
 
 # detect anomalies
 threshold <- 2
-test_point_anomalies <- detectPointAnomaliesMVhmm(test_pred, hmm$model$parms.emission, threshold)
+test_point_anomalies <- detectPointAnomaliesUVhmm(test_pred, hmm$model$parms.emission, threshold)
 
 # detect collective anomalies
 threshold <- 1
 window_size <- 20
-test_collective_anomalies <- detectCollectiveAnomaliesMVhmm(test_pred, hmm$model$parms.emission, window_size, threshold)
+test_collective_anomalies <- detectCollectiveAnomaliesUVhmm(test_pred, hmm$model$parms.emission, window_size, threshold)
 
