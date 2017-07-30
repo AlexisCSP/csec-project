@@ -2,6 +2,8 @@ library(mhsmm)
 if(!exists("foo", mode="function")) source("formatHMM.R")
 if(!exists("foo", mode="function")) source("detectPointAnomaliesUVhmm.R")
 if(!exists("foo", mode="function")) source("detectCollectiveAnomaliesUVhmm.R")
+if(!exists("foo", mode="function")) source("AddCollectiveNoise.R")
+
 
 #--------------------------------------------- Load dataset ---------------------------------------------#
 
@@ -13,7 +15,7 @@ train <- read_csv("train.txt",
 
 
 # load test data
-test <- read_csv("test2.txt", 
+test <- read_csv("test1.txt", 
                  col_types = cols(Date = col_date(format = "%d/%m/%Y"), 
                                   Time = col_time(format = "%H:%M:%S")))
 
@@ -113,15 +115,21 @@ noise <- runif(sum(corrupt), 0.0, 7.0)
 validation_data$x[corrupt] <- noise
 
 # predict with validation data
-validation_pred <- predict.hmm(hmm, validation_data)
+
 
 # detect point anomalies
-threshold <- 2
+threshold <- 1
 validation_point_anomalies <- detectPointAnomaliesUVhmm(validation_pred, hmm$model$parms.emission, threshold)
 
 # detect collective anomalies
+
+window_size <- 20
+
+noisy_validation_data <- validation_data
+noisy_validation_data <- AddCollectiveNoise(noisy_validation_data, window_size)
+validation_pred <- predict.hmm(hmm, noisy_validation_data)
+
 threshold <- 1
-window_size <- 5
 validation_collective_anomalies <- detectCollectiveAnomaliesUVhmm(validation_pred, hmm$model$parms.emission, window_size, threshold)
 
 
