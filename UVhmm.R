@@ -101,23 +101,27 @@ train_data <- formatHMM(train_data)
 hmm = hmmfit(train_data, model, mstep = mstep.norm, maxit= 300)
 summary(hmm)
 
-hmm$loglik
-
 #--------------------------------------------- Validate Univariate HMM ---------------------------------------------#
 
 # format the validation data
 validation_data <- formatHMM(data.frame(validation_data))
 
+corrupt <- rbinom(length(validation_data$x), 1, 0.1)
+corrupt <- as.logical(corrupt)
+noise <- runif(sum(corrupt), 0.0, 7.0)
+
+validation_data$x[corrupt] <- noise
+
 # predict with validation data
 validation_pred <- predict.hmm(hmm, validation_data)
 
 # detect point anomalies
-threshold <- 0.5
+threshold <- 2
 validation_point_anomalies <- detectPointAnomaliesUVhmm(validation_pred, hmm$model$parms.emission, threshold)
 
 # detect collective anomalies
 threshold <- 1
-window_size <- 20
+window_size <- 5
 validation_collective_anomalies <- detectCollectiveAnomaliesUVhmm(validation_pred, hmm$model$parms.emission, window_size, threshold)
 
 

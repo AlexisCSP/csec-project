@@ -121,12 +121,17 @@ train_data <- formatHMM(train_data)
 # train model
 hmm = hmmfit(train_data, model, mstep = mstep.mvnorm, maxit= 300)
 summary(hmm)
-hmm$loglik
 
 #--------------------------------------------- Validate MVHMM ---------------------------------------------#
 
 # format the validation data
 validation_data <- formatHMM(data.frame(validation_data))
+
+corrupt <- rbinom(length(validation_data$x[,1]), 1, 0.1)
+corrupt <- as.logical(corrupt)
+noise <- runif(sum(corrupt), 0.0, 7.0)
+
+validation_data$x[corrupt,1] <- noise
 
 # predict with validation data
 validation_pred <- predict.hmm(hmm, validation_data)
