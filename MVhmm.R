@@ -1,127 +1,165 @@
-library(HMM)
 library(mhsmm)
+if(!exists("foo", mode="function")) source("formatHMM.R")
+if(!exists("foo", mode="function")) source("detectPointAnomaliesMVhmm.R")
+if(!exists("foo", mode="function")) source("detectCollectiveAnomaliesMVhmm.R")
 
-if(!exists("foo", mode="function")) source("formatMhsmm.R")
+#--------------------------------------------- Load dataset ---------------------------------------------#
 
-# load data
+# load train data
 library(readr)
-data <- read_csv("~/cybersecurity/train.txt", 
+train <- read_csv("train.txt", 
+                  col_types = cols(Date = col_date(format = "%d/%m/%Y"), 
+                                   Time = col_time(format = "%H:%M:%S")))
+
+
+# load test data
+test <- read_csv("test2.txt", 
                  col_types = cols(Date = col_date(format = "%d/%m/%Y"), 
                                   Time = col_time(format = "%H:%M:%S")))
 
+#--------------------------------------------- Clean dataset ---------------------------------------------#
+
 # remove NA rows
-data <- na.omit(data)
+train <- na.omit(train)
+test <- na.omit(test)
 
-# Leave columns of interest and reduce size of dataset
-reduced_data <- data[1:100000,3:6]
-plot.ts(reduced_data)
+# scale observations
+correlation <- cor(train[,3:6])
+scaled_train <- data.frame(scale(train[,3:6]))
 
-# scale the values
-scaled_data <- data.frame(scale(reduced_data))
+#--------------------------------------------- Split dataset  ---------------------------------------------#
 
-correlation <- cor(scaled_data)
+# Split into train and validation data
 
-# Defining MHMM parameters
+rows <- nrow(scaled_train)
+split1 <- floor(.90*rows)
+split2 <- split1 + 1
 
+train_split <- scaled_train[1:split1,]
+validation_split  <- scaled_train[split2:rows,]
+
+train_data <- train_split
+validation_data <- validation_split
+test_data <- data.frame(scale(test[,3:6])) # Leave columns of interest in test
+
+#--------------------------------------------- Define MVHMM parameters  ---------------------------------------------#
 
 # Number of states
 J <- 3
 
+# Number of variables
+v <- 4
 
-# Calculating the means by KNN
-m <- kmeans(scaled_data, J)
+# Calculating the clusters and the means of the states by KNN
+kclust <- kmeans(train_data, J)
 
-scaled_data$cluster <- m$cluster
+means <- vector("list", J)
 
-k1 <- subset(scaled_data, scaled_data$cluster == 1)
-k2 <- subset(scaled_data, scaled_data$cluster == 2)
-k3 <- subset(scaled_data, scaled_data$cluster == 3)
+for(i in 1:J) {
+  means[[i]] <- kclust$centers[i,]
+}
 
-scaled_data$cluster <- NULL
+train_data$cluster <- kclust$cluster
 
-# Calculating the std
+# create arrays to hold observations of each cluster/state
+clusters <- vector("list", J)
 
-k11_std <- sd(k1$Global_active_power)
-k21_std <- sd(k2$Global_active_power)
-k31_std <- sd(k3$Global_active_power)
+for(i in 1:J) {
+  clusters[[i]] = numeric(kclust$size[i])
+  clusters[[i]] = subset(train_data, train_data$cluster == i)
+}
 
-k12_std <- sd(k1$Global_reactive_power)
-k22_std <- sd(k2$Global_reactive_power)
-k32_std <- sd(k3$Global_reactive_power)
+train_data$cluster <- NULL
 
-k13_std <- sd(k1$Voltage)
-k23_std <- sd(k2$Voltage)
-k33_std <- sd(k3$Voltage)
+# Calculating the std for each cluster/state (column of the matrix)
+clusters_std <- matrix(nrow = v, ncol = J)
 
-k14_std <- sd(k1$Global_intensity)
-k24_std <- sd(k2$Global_intensity)
-k34_std <- sd(k3$Global_intensity)
+for(i in 1:J) {
+  for(k in 1:v) {
+    clusters_std[k,i] = sd(clusters[[i]][[k]])
+  }
+}
 
-# Diagonal for the std matrix of each state
+# Calculate covariance between variables within a cluster
+clusters_cov <- vector("list", J)
 
-k1_diag = c(k11_std,k12_std,k13_std, k14_std)
-k2_diag = c(k21_std,k22_std,k23_std, k24_std)
-k3_diag = c(k31_std,k32_std,k33_std, k34_std)
+i <- 1
+for(c in clusters) {
+  clusters_cov[[i]] = matrix(nrow = v, ncol = v)
+  clusters_cov[[i]] = cov(c[1:4])
+  i <- i + 1
+}
 
+# Define the diagonal of the covariance matrices for each state as the standard deviation of corresponding variable
+for(i in 1:J) {
+    diag(clusters_cov[[i]]) = clusters_std[,i]
+}
 
-# Standard deviation matrix, first get the covariance for each state
+std_matrix <- clusters_cov
 
-k1_std <- cov(k1[,1:4])
-k2_std <- cov(k2[,1:4])
-k3_std <- cov(k3[,1:4])
+#--------------------------------------------- Create MVHMM Specification ---------------------------------------------#
 
-# fill in the diagonal
-
-diag(k1_std) <- k1_diag
-diag(k2_std) <- k2_diag
-diag(k3_std) <- k3_diag
-
-
-std_matrix <- list(k1_std, k2_std, k3_std)
-
-# init probabilities
+# initial state probabilities
 init <- rep(1/J, J)
 
 # transition probability matrix
 P <- matrix(rep(1/J, J), nrow = J, ncol = J)
 
 # emission matrix
-means <- t(m$centers)
-means <- list(c(means[,1]), c(means[,2]), c(means[,3]))
-
 b <- list(mu = means, sigma = std_matrix)
 
 # fitting the model
+
 model <- hmmspec(init = init, trans = P, parms.emission = b, dens.emission = dmvnorm.hsmm)
 model
 
+#--------------------------------------------- Fit MVHMM ---------------------------------------------#
+
+# format the training data
+train_data <- formatHMM(train_data)
+
 # train model
+hmm = hmmfit(train_data, model, mstep = mstep.mvnorm, maxit= 300)
+summary(hmm)
 
-train_data <- list(x = data.frame(scaled_data), N = nrow(scaled_data))
-train_data$x <- data.matrix(train_data$x, rownames.force = NA)
-class(train_data) <- "hsmm.data"
+#--------------------------------------------- Validate MVHMM ---------------------------------------------#
 
-h1 = hmmfit(train_data$x, model, mstep = mstep.mvnorm, maxit= 300)
-h1$loglik
+# format the validation data
+validation_data <- formatHMM(data.frame(validation_data))
 
-summary(h1)
+corrupt <- rbinom(length(validation_data$x[,1]), 1, 0.1)
+corrupt <- as.logical(corrupt)
+noise <- runif(sum(corrupt), 0.0, 7.0)
 
-# test model
+validation_data$x[corrupt,1] <- noise
 
-test <- read_csv("~/cybersecurity/test1.txt", 
-                 col_types = cols(Date = col_date(format = "%d/%m/%Y"), 
-                                  Time = col_time(format = "%H:%M:%S")))
+# predict with validation data
+validation_pred <- predict.hmm(hmm, validation_data)
 
-# remove NA rows
-test <- na.omit(test)
+# detect point anomalies
+threshold <- 2
+validation_point_anomalies <- detectPointAnomaliesMVhmm(validation_pred, hmm$model$parms.emission, threshold)
 
-test <- test[,3:6]
-scaled_test <- data.frame(scale(test))
-
-test_data <- list(x = data.frame(scaled_test), N = nrow(scaled_test))
-test_data$x <- data.matrix(test_data$x, rownames.force = NA)
-class(test_data) <- "hsmm.data"
+# detect collective anomalies
+threshold <- 1
+window_size <- 20
+validation_collective_anomalies <- detectCollectiveAnomaliesMVhmm(validation_pred, hmm$model$parms.emission, window_size, threshold)
 
 
-mvhmm_test <- predict.hmm(h1, test_data$x)
-mvhmm_test$loglik
+#--------------------------------------------- Test MVHMM ---------------------------------------------#
+
+# format the test data
+test_data <- formatHMM(data.frame(test_data))
+
+# predict with test data
+test_pred <- predict.hmm(hmm, test_data)
+
+# detect point anomalies
+threshold <- 2
+test_point_anomalies <- detectPointAnomaliesMVhmm(test_pred, hmm$model$parms.emission, threshold)
+
+# detect collective anomalies
+threshold <- 1
+window_size <- 20
+test_collective_anomalies <- detectCollectiveAnomaliesMVhmm(test_pred, hmm$model$parms.emission, window_size, threshold)
+
