@@ -1,0 +1,58 @@
+\begin{thebibliography}{10}
+
+\bibitem{log}
+Likelihood & loglikelihood.
+\newblock \url{https://onlinecourses.science.psu.edu/stat504/node/27}, 2017.
+\newblock Accessed 2017-07-30.
+
+\bibitem{chandola}
+V.~Chandola, A.~Banerjee, and V.~Kumar.
+\newblock Anomaly detection: A survey.
+\newblock {\em ACM Computing Surveys}, 41, 2009.
+
+\bibitem{ukraine}
+I.~C.~S. cyber Emergency Response~Team.
+\newblock Cyber-attack against ukrainian critical infrastructure.
+\newblock \url{https://ics-cert.us-cert.gov/alerts/IR-ALERT-H-16-056-01}, 2016.
+\newblock Accessed: 2017-07-30.
+
+\bibitem{r}
+T.~R. Foundation.
+\newblock The r project.
+\newblock Accessed 2017-07-30.
+
+\bibitem{markov}
+joxemai4.
+\newblock The markov process.
+\newblock
+  \url{https://upload.wikimedia.org/wikipedia/commons/2/2b/Markovkate\_01.svg},
+  2010.
+\newblock [accessed 30-July-2017].
+
+\bibitem{missing}
+H.~Kang.
+\newblock The prevention and handling of the missing data.
+\newblock {\em Korean Journal of Anesthesiology}, 64:402--406, 2013.
+
+\bibitem{dataset}
+M.~Lichman.
+\newblock {UCI} machine learning repository, 2013.
+
+\bibitem{Rabiner}
+L.~R. Rabiner.
+\newblock Readings in speech recognition.
+\newblock chapter A Tutorial on Hidden Markov Models and Selected Applications
+  in Speech Recognition, pages 267--296. Morgan Kaufmann Publishers Inc., San
+  Francisco, CA, USA, 1990.
+
+\bibitem{datascience}
+H.~Wickham and G.~Grolemund.
+\newblock {\em R for Data Science}.
+\newblock O'Reilly, 2017.
+
+\bibitem{zahra}
+Z.~Zohrevand, U.~Gl{\"a}sser, H.~Y. Shahir, M.~A. Tayebi, and R.~Costanzo.
+\newblock Hidden markov based anomaly detection for water supply systems.
+\newblock In {\em Big Data}, pages 1551--1560, 2016.
+
+\end{thebibliography}

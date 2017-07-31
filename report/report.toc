@@ -1,0 +1,20 @@
+\contentsline {section}{List of Figures}{4}{section*.2}
+\contentsline {section}{\numberline {1}Introduction}{5}{section.1}
+\contentsline {section}{\numberline {2}Background}{6}{section.2}
+\contentsline {subsection}{\numberline {2.1}Anomalies}{6}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Markov Models}{7}{subsection.2.2}
+\contentsline {subsection}{\numberline {2.3}The Power Grid}{9}{subsection.2.3}
+\contentsline {section}{\numberline {3}Problem Definition}{9}{section.3}
+\contentsline {section}{\numberline {4}Methodology}{10}{section.4}
+\contentsline {subsection}{\numberline {4.1}Tools Used}{10}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}Data Preprocessing}{10}{subsection.4.2}
+\contentsline {subsection}{\numberline {4.3}Dataset Description}{11}{subsection.4.3}
+\contentsline {subsection}{\numberline {4.4}Characteristics of the Dataset}{13}{subsection.4.4}
+\contentsline {section}{\numberline {5}Experimental Analysis}{17}{section.5}
+\contentsline {subsection}{\numberline {5.1}Overview}{17}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}Process}{18}{subsection.5.2}
+\contentsline {section}{\numberline {6}Experimental Results}{20}{section.6}
+\contentsline {section}{\numberline {7}Discussion}{24}{section.7}
+\contentsline {section}{\numberline {8}Conclusion}{26}{section.8}
+\contentsline {section}{\numberline {9}Contribution of Group Members}{26}{section.9}
+\contentsline {section}{References}{27}{section*.12}
