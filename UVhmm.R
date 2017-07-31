@@ -45,7 +45,7 @@ test_data <- test[,3]
 #--------------------------------------------- Define HMM parameters  ---------------------------------------------#
 
 # Number of states
-J <- 4
+J <- 3
 
 # Number of variables
 v <- 1
@@ -116,7 +116,7 @@ corrupt <- as.logical(corrupt)
 noise <- runif(sum(corrupt), 0.0, 7.0)
 noisyP_validation_data$x[corrupt] <- noise
 
-# predict with validation data
+# predict with noisy validation data
 validation_pred <- predict.hmm(hmm, noisyP_validation_data)
 
 # detect point anomalies
@@ -124,7 +124,7 @@ threshold <- 1
 validation_point_anomalies <- detectPointAnomaliesUVhmm(validation_pred, hmm$model$parms.emission, threshold)
 
 # add collective anomalies to validation data
-window_size <- 20
+window_size <- 5
 noisyC_validation_data <- validation_data
 noisyC_validation_data <- AddCollectiveNoise(noisyC_validation_data, window_size)
 validation_pred <- predict.hmm(hmm, noisyC_validation_data)
@@ -148,6 +148,6 @@ test_point_anomalies <- detectPointAnomaliesUVhmm(test_pred, hmm$model$parms.emi
 
 # detect collective anomalies
 threshold <- 1
-window_size <- 20
+window_size <- 5
 test_collective_anomalies <- detectCollectiveAnomaliesUVhmm(test_pred, hmm$model$parms.emission, window_size, threshold)
 
