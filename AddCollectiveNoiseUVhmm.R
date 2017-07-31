@@ -1,4 +1,4 @@
-AddCollectiveNoise <- function(data, window_size) {
+AddCollectiveNoiseUVhmm <- function(data, window_size) {
   N <- data$N
   size <- ceiling(N/window_size)
 
