@@ -2,7 +2,7 @@ library(mhsmm)
 if(!exists("foo", mode="function")) source("formatHMM.R")
 if(!exists("foo", mode="function")) source("detectPointAnomaliesUVhmm.R")
 if(!exists("foo", mode="function")) source("detectCollectiveAnomaliesUVhmm.R")
-if(!exists("foo", mode="function")) source("AddCollectiveNoise.R")
+if(!exists("foo", mode="function")) source("AddCollectiveNoiseUVhmm.R")
 
 
 #--------------------------------------------- Load dataset ---------------------------------------------#
@@ -126,7 +126,7 @@ validation_point_anomalies <- detectPointAnomaliesUVhmm(validation_pred, hmm$mod
 # add collective anomalies to validation data
 window_size <- 5
 noisyC_validation_data <- validation_data
-noisyC_validation_data <- AddCollectiveNoise(noisyC_validation_data, window_size)
+noisyC_validation_data <- AddCollectiveNoiseUVhmm(noisyC_validation_data, window_size)
 validation_pred <- predict.hmm(hmm, noisyC_validation_data)
 
 # detect collective anomalies
