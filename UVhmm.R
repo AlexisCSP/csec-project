@@ -15,7 +15,7 @@ train <- read_csv("train.txt",
 
 
 # load test data
-test <- read_csv("test1.txt", 
+test <- read_csv("test2.txt", 
                  col_types = cols(Date = col_date(format = "%d/%m/%Y"), 
                                   Time = col_time(format = "%H:%M:%S")))
 
@@ -33,7 +33,7 @@ rows <- nrow(train)
 split1 <- floor(.90*rows)
 split2 <- split1 + 1
 
-train_split <- train[1:split1,]
+train_split <- train[,]
 validation_split  <- train[split2:rows,]
 
 # Leave column of interest (Global reactive power)
@@ -146,8 +146,13 @@ test_pred <- predict.hmm(hmm, test_data)
 threshold <- 2
 test_point_anomalies <- detectPointAnomaliesUVhmm(test_pred, hmm$model$parms.emission, threshold)
 
+file <- paste("pointAnomalies", threshold, ".txt", sep = "")
+write.table(test_point_anomalies$data, file, sep = ',', row.names = FALSE, col.names = FALSE)
+
 # detect collective anomalies
 threshold <- 1
 window_size <- 5
 test_collective_anomalies <- detectCollectiveAnomaliesUVhmm(test_pred, hmm$model$parms.emission, window_size, threshold)
 
+file <- paste("collectiveAnomalies", window_size, ".txt", sep = "")
+write.table(test_collective_anomalies$data, file, sep = ',', row.names = FALSE, col.names = FALSE)

@@ -9,10 +9,11 @@ detectPointAnomaliesUVhmm <- function(prediction, params, threshold) {
     obs_value <- prediction$x[i,1]
     state_mean <- params$mu[obs_state]
     state_std <- params$sigma[obs_state]
-    probability <- normalize(abs(obs_value - state_mean), min, max)
+    probability <- 0
     anomaly <- 0
     if(abs(obs_value - state_mean) > threshold) {
       anomaly <- 1
+      probability <- 1
       anomalies <- anomalies + 1
     }
     anomaly_results[i,] <- c(anomaly, probability)
